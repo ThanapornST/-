@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
+import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2, ArrowLeft } from 'lucide-react';
 import { synthesizeSpeech } from '../services/textToSpeech';
 
 interface NovelData {
@@ -33,6 +33,8 @@ const GenerateNovelPage = () => {
   const [rightContent, setRightContent] = useState<'chat' | 'outline' | 'settings'>('chat');
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState<number[]>([]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -68,19 +70,19 @@ const GenerateNovelPage = () => {
   const novels = [
     {
       id: 1,
-      title: "The Game Artist",
-      summary: "A story about an unlikely friendship between a game company employee and a freelance artist",
+      title: "Freelance girl and direct sales guy",
+      summary: "A freelance girl who cherished solitude crossed paths with a direct sales guy whose charm thrived on connection, and together, they redefined their worlds.",
     },
-    {
-      id: 2,
-      title: "Digital Dreams",
-      summary: "Where art meets gaming in the modern world",
-    },
-    {
-      id: 3,
-      title: "Creative Connections",
-      summary: "Two different souls connected by their passion for games",
-    }
+    // {
+    //   id: 2,
+    //   title: "Digital Dreams",
+    //   summary: "Where art meets gaming in the modern world",
+    // },
+    // {
+    //   id: 3,
+    //   title: "Creative Connections",
+    //   summary: "Two different souls connected by their passion for games",
+    // }
   ];
 
   const generateSpeech = useCallback(async (text: string) => {
@@ -171,6 +173,54 @@ const GenerateNovelPage = () => {
     }
   };
 
+  const convertMessagesToCSV = (messageIds: number[]) => {
+    const messagesToExport = messages.filter(message => messageIds.includes(message.id));
+    const header = "Id,Sender,Text,IsAI\n";
+    const csvRows = messagesToExport.map(message => {
+      return `${message.id},${message.sender},"${message.text.replace(/"/g, '""')}",${message.isAI}`;
+    }).join('\n');
+    return header + csvRows;
+  };
+
+  const downloadCSV = (csvData: string, filename: string) => {
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportAll = () => {
+    const messageIds = messages.map(message => message.id);
+    const csvData = convertMessagesToCSV(messageIds);
+    downloadCSV(csvData, 'all_messages.csv');
+    setIsExportModalOpen(false);
+  };
+
+  const handleExportSelected = () => {
+    if (selectedMessages.length === 0) {
+      alert('Please select at least one message to export.');
+      return;
+    }
+    const csvData = convertMessagesToCSV(selectedMessages);
+    downloadCSV(csvData, 'selected_messages.csv');
+    setIsExportModalOpen(false);
+  };
+
+  const handleSelectMessage = (messageId: number) => {
+    setSelectedMessages(prev => {
+      if (prev.includes(messageId)) {
+        return prev.filter(id => id !== messageId);
+      } else {
+        return [...prev, messageId];
+      }
+    });
+  };
+
   const renderRightContent = () => {
     switch (rightContent) {
       case 'chat':
@@ -203,6 +253,12 @@ const GenerateNovelPage = () => {
                       </button>
                     </div>
                   </div>
+                  <input
+                    type="checkbox"
+                    value={message.id}
+                    onChange={() => handleSelectMessage(message.id)}
+                    className="ml-2"
+                  />
                 </div>
               ))}
             </div>
@@ -403,7 +459,10 @@ const GenerateNovelPage = () => {
                 Settings
               </button>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600">
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600"
+            >
               <Export className="w-4 h-4" />
               Export
             </button>
@@ -417,6 +476,36 @@ const GenerateNovelPage = () => {
         {/* Right Content Area */}
         {renderRightContent()}
       </div>
+
+      {/* Export Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-[#0f0f0f] w-full max-w-md p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Export Options</h2>
+            <p className="text-gray-400 mb-4">Choose how you want to export your messages:</p>
+            <div className="space-y-4">
+              <button
+                onClick={handleExportAll}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Export All Messages
+              </button>
+              <button
+                onClick={handleExportSelected}
+                className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Export Selected Messages
+              </button>
+            </div>
+            <button
+              onClick={() => setIsExportModalOpen(false)}
+              className="mt-6 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
