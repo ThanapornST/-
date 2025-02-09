@@ -1,5 +1,6 @@
 import React from 'react';
 import { PenLine } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   return (
@@ -19,9 +20,12 @@ const Navbar = () => {
           </div>
 
           <div>
-            <button className="bg-gray-900 text-white px-4 py-2 rounded-lg">
+            <Link 
+              to="/login"
+              className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            >
               Log in
-            </button>
+            </Link>
           </div>
         </div>
       </div>
