@@ -104,24 +104,24 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, ty
     
     try {
       // Create form data for submission
-      const submitData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        submitData.append(key, value);
-      });
-      
-      if (coverImage) {
-        submitData.append('coverImage', coverImage);
-      }
-
-      // Store the form data in localStorage or state management if needed
-      localStorage.setItem('novelData', JSON.stringify({
+      const submitData = {
         ...formData,
         type,
-        coverPreview
-      }));
+        coverImage: coverPreview,
+        characters: parseInt(formData.characters, 10),
+        generationTime: parseInt(formData.generationTime, 10)
+      };
 
-      // Navigate to the generate novel page
-      navigate('/generate-novel');
+      // Store the form data in localStorage
+      localStorage.setItem('novelData', JSON.stringify(submitData));
+
+      // Navigate to the generate novel page with the data
+      navigate('/generate-novel', { 
+        state: { 
+          novelData: submitData,
+          mode: 'create'
+        }
+      });
     } catch (error) {
       console.error('Error submitting form:', error);
     }

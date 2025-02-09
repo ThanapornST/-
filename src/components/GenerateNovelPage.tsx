@@ -1,30 +1,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2, Plus, Pencil, Star, ArrowLeft } from 'lucide-react';
 import { synthesizeSpeech } from '../services/textToSpeech';
 
 interface NovelData {
   title: string;
+  characters: number;
   plotSummary: string;
-  characters: string;
+  additionalInfo: string;
   toneOfStory: string;
   storyStructure: string;
   genre: string;
   era: string;
+  generationTime: number;
   type: 'episodic' | 'one-shot';
-  coverPreview?: string;
+  coverImage?: string;
 }
 
 interface Message {
   id: number;
   text: string;
   isAI: boolean;
-  sender: 'Sun' | 'Schebel';
+  sender: 'Sun' | 'Schebel' | 'System';
   avatar: string;
 }
 
 const GenerateNovelPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [novelData, setNovelData] = useState<NovelData | null>(null);
   const [language, setLanguage] = useState('Thai');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -35,6 +38,23 @@ const GenerateNovelPage = () => {
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [messagesPerPage] = useState(4);
+
+  const [characters, setCharacters] = useState([
+    {
+      id: 1,
+      name: 'ชื่อ',
+      status: 'active',
+      isStarred: true
+    },
+    {
+      id: 2,
+      name: 'ชื่อ',
+      status: 'active',
+      isStarred: true
+    }
+  ]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -67,22 +87,30 @@ const GenerateNovelPage = () => {
     }
   ]);
 
+  // Get current messages
+  const indexOfLastMessage = currentPage * messagesPerPage;
+  const indexOfFirstMessage = indexOfLastMessage - messagesPerPage;
+  const currentMessages = messages.slice(indexOfFirstMessage, indexOfLastMessage);
+
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
   const novels = [
     {
       id: 1,
       title: "Freelance girl and direct sales guy",
       summary: "A freelance girl who cherished solitude crossed paths with a direct sales guy whose charm thrived on connection, and together, they redefined their worlds.",
     },
-    // {
-    //   id: 2,
-    //   title: "Digital Dreams",
-    //   summary: "Where art meets gaming in the modern world",
-    // },
-    // {
-    //   id: 3,
-    //   title: "Creative Connections",
-    //   summary: "Two different souls connected by their passion for games",
-    // }
+    {
+      id: 2,
+      title: "Digital Dreams",
+      summary: "Where art meets gaming in the modern world",
+    },
+    {
+      id: 3,
+      title: "Creative Connections",
+      summary: "Two different souls connected by their passion for games",
+    }
   ];
 
   const generateSpeech = useCallback(async (text: string) => {
@@ -110,13 +138,30 @@ const GenerateNovelPage = () => {
   }, [audioPlayer]);
 
   useEffect(() => {
-    const savedNovelData = localStorage.getItem('novelData');
-    if (savedNovelData) {
-      setNovelData(JSON.parse(savedNovelData));
+    // Check if we have data from navigation state
+    if (location.state?.novelData) {
+      setNovelData(location.state.novelData);
+      // Initialize the chat with the novel data
+      if (location.state.mode === 'create') {
+        const initialMessage: Message = {
+          id: messages.length + 1,
+          text: `สร้างนิยายเรื่อง "${location.state.novelData.title}" ที่มีเนื้อเรื่องเกี่ยวกับ ${location.state.novelData.plotSummary}`,
+          isAI: false,
+          sender: "System",
+          avatar: "https://images.unsplash.com/photo-1600486913747-55e5470d6f40?w=50&h=50&fit=crop"
+        };
+        setMessages(prev => [...prev, initialMessage]);
+      }
     } else {
-      navigate('/create-novel');
+      // Check localStorage as fallback
+      const savedNovelData = localStorage.getItem('novelData');
+      if (savedNovelData) {
+        setNovelData(JSON.parse(savedNovelData));
+      } else {
+        navigate('/create-novel');
+      }
     }
-  }, [navigate]);
+  }, [location.state, navigate]);
 
   const generateText = async () => {
     if (isGenerating) return;
@@ -126,29 +171,31 @@ const GenerateNovelPage = () => {
     const lastMessage = messages[messages.length - 1];
     const isSunNext = lastMessage.sender === 'Schebel';
     
-    // Conversation flow based on context
+    // Use novel data to influence the conversation
     let newText = '';
     
-    if (isSunNext) {
-      // Sun's responses - enthusiastic and friendly
-      const sunResponses = [
-        "เธอเก่งมากเลยนะ ฝีมือแบบนี้ถ้ามาร่วมทีมเราได้จะดีมาก ๆ เลย!",
-        "เข้าใจ ๆ แต่ถ้าสนใจทำงานพาร์ทไทม์กับเราก็บอกได้นะ เรามีโปรเจกต์สนุก ๆ เยอะเลย",
-        "คิดว่าไง ถ้าเราลองทำงานด้วยกันในโปรเจกต์เล็ก ๆ ก่อน? ไม่ต้องเข้าออฟฟิศก็ได้นะ",
-        "เห็นผลงานเธอแล้วอดคิดไม่ได้ว่าถ้าได้ร่วมงานกันคงจะเจ๋งมาก ๆ",
-        "ทีมเรากำลังหาคนที่มีสไตล์การวาดแบบเธอพอดีเลย สนใจคุยรายละเอียดเพิ่มไหม?"
-      ];
-      newText = sunResponses[Math.floor(Math.random() * sunResponses.length)];
+    if (novelData) {
+      // Generate response based on novel data and context
+      if (isSunNext) {
+        const responses = [
+          `ฉันชอบแนวคิดเรื่อง ${novelData.title} มาก โดยเฉพาะในส่วนของ ${novelData.plotSummary}`,
+          `เรื่องราวแนว ${novelData.genre} นี่น่าสนใจมากเลย คุณคิดยังไงกับการพัฒนาตัวละครต่อ?`,
+          `บรรยากาศแบบ ${novelData.era} เข้ากับโทนเรื่อง ${novelData.toneOfStory} ได้ดีมากเลย`
+        ];
+        newText = responses[Math.floor(Math.random() * responses.length)];
+      } else {
+        const responses = [
+          `ขอบคุณค่ะ ฉันตั้งใจให้เรื่องนี้มีความพิเศษในแบบ ${novelData.toneOfStory}`,
+          `ใช่ค่ะ ฉันวางโครงเรื่องแบบ ${novelData.storyStructure} เพื่อให้เข้ากับธีมหลัก`,
+          `ฉันพยายามสร้างตัวละครให้สมจริงในบริบทของยุค ${novelData.era} ค่ะ`
+        ];
+        newText = responses[Math.floor(Math.random() * responses.length)];
+      }
     } else {
-      // Schebel's responses - reserved and professional
-      const schebelResponses = [
-        "ขอบคุณค่ะ แต่ตอนนี้มีงานที่ต้องทำอยู่แล้ว",
-        "ขอเวลาคิดดูก่อนนะคะ",
-        "ยังไม่แน่ใจว่าจะเข้ากับทีมได้หรือเปล่าค่ะ",
-        "ชอบทำงานอิสระมากกว่าค่ะ",
-        "ขอโทษนะคะ แต่ตอนนี้อยากโฟกัสกับงานฟรีแลนซ์ไปก่อน"
-      ];
-      newText = schebelResponses[Math.floor(Math.random() * schebelResponses.length)];
+      // Fallback responses if no novel data
+      newText = isSunNext ? 
+        "เล่าเพิ่มเติมเกี่ยวกับแนวคิดของเรื่องได้ไหม?" : 
+        "ฉันกำลังพัฒนาเนื้อเรื่องให้น่าสนใจมากขึ้นค่ะ";
     }
 
     const newMessage: Message = {
@@ -163,6 +210,12 @@ const GenerateNovelPage = () => {
 
     setMessages(prev => [...prev, newMessage]);
     setIsGenerating(false);
+
+    // If we're on the last page and add a new message, move to the new last page
+    const totalPages = Math.ceil((messages.length + 1) / messagesPerPage);
+    if (currentPage < totalPages) {
+      setCurrentPage(totalPages);
+    }
   };
 
   const navigateToNovel = (direction: 'prev' | 'next') => {
@@ -221,6 +274,15 @@ const GenerateNovelPage = () => {
     });
   };
 
+  // Calculate total pages
+  const totalPages = Math.ceil(messages.length / messagesPerPage);
+
+  // Generate page numbers
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
   const renderRightContent = () => {
     switch (rightContent) {
       case 'chat':
@@ -228,7 +290,7 @@ const GenerateNovelPage = () => {
           <>
             {/* Chat Area */}
             <div className="flex-1 overflow-auto p-4">
-              {messages.map((message) => (
+              {currentMessages.map((message) => (
                 <div key={message.id} className="flex items-start mb-6">
                   <div className="flex items-start">
                     <img 
@@ -255,12 +317,51 @@ const GenerateNovelPage = () => {
                   </div>
                   <input
                     type="checkbox"
-                    value={message.id}
+                    checked={selectedMessages.includes(message.id)}
                     onChange={() => handleSelectMessage(message.id)}
                     className="ml-2"
                   />
                 </div>
               ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-center items-center space-x-2 p-4 border-t border-gray-800">
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded ${
+                  currentPage === 1 
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {pageNumbers.map(number => (
+                <button
+                  key={number}
+                  onClick={() => paginate(number)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === number 
+                      ? 'bg-blue-500' 
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded ${
+                  currentPage === totalPages 
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Input Area */}
@@ -281,6 +382,48 @@ const GenerateNovelPage = () => {
               </div>
             </div>
           </>
+        );
+      case 'tables':
+        return (
+          <div className="flex-1 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">ตัวละครทั้งหมด</h2>
+              <button className="px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] transition-colors">
+                เพิ่มเสียงตัวละคร
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {characters.map((character) => (
+                <div key={character.id} className="relative group">
+                  <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center">
+                    <div className="relative">
+                      <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
+                        <span className="text-3xl text-gray-400">{character.name}</span>
+                      </div>
+                      {character.isStarred && (
+                        <Star className="absolute top-0 right-0 w-5 h-5 text-yellow-500" fill="currentColor" />
+                      )}
+                    </div>
+                    <span className="text-gray-400">สถานะ</span>
+                    <button className="mt-2">
+                      <Pencil className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add New Character Card */}
+              <div className="relative group">
+                <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center justify-center h-full cursor-pointer hover:bg-[#2a2a2a] transition-colors">
+                  <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
+                    <Plus className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <span className="text-gray-400">เพิ่มตัวละคร</span>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 'outline':
         return (
