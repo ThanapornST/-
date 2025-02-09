@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Image } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateStoryModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface CreateStoryModalProps {
 }
 
 const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, type }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     characters: '',
@@ -111,20 +113,17 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, ty
         submitData.append('coverImage', coverImage);
       }
 
-      // Here you would typically send the form data to your backend
-      console.log('Form submitted:', {
-        formData,
-        coverImage: coverImage ? {
-          name: coverImage.name,
-          type: coverImage.type,
-          size: coverImage.size
-        } : null
-      });
+      // Store the form data in localStorage or state management if needed
+      localStorage.setItem('novelData', JSON.stringify({
+        ...formData,
+        type,
+        coverPreview
+      }));
 
-      onClose();
+      // Navigate to the generate novel page
+      navigate('/generate-novel');
     } catch (error) {
       console.error('Error submitting form:', error);
-      // Handle submission error
     }
   };
 
