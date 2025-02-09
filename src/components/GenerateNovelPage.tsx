@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock } from 'lucide-react';
+import { PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NovelData {
   title: string;
@@ -27,6 +27,26 @@ const GenerateNovelPage = () => {
   const [language, setLanguage] = useState('English (US)');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentNovelIndex, setCurrentNovelIndex] = useState(0);
+
+  // Sample novels array - in a real app, this would come from your backend
+  const novels = [
+    {
+      id: 1,
+      title: "The Lost Kingdom",
+      summary: "A fantasy epic about a hidden realm",
+    },
+    {
+      id: 2,
+      title: "Midnight Shadows",
+      summary: "A supernatural mystery in a small town",
+    },
+    {
+      id: 3,
+      title: "Future's Edge",
+      summary: "A sci-fi adventure in the year 3000",
+    }
+  ];
 
   const recentItems = [
     { id: 1, title: 'Chapter 1: The Beginning', date: '2024-03-15' },
@@ -70,6 +90,14 @@ const GenerateNovelPage = () => {
     setIsGenerating(false);
   };
 
+  const navigateToNovel = (direction: 'prev' | 'next') => {
+    if (direction === 'prev' && currentNovelIndex > 0) {
+      setCurrentNovelIndex(currentNovelIndex - 1);
+    } else if (direction === 'next' && currentNovelIndex < novels.length - 1) {
+      setCurrentNovelIndex(currentNovelIndex + 1);
+    }
+  };
+
   if (!novelData) return null;
 
   return (
@@ -88,7 +116,7 @@ const GenerateNovelPage = () => {
             <Link to="/" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
               Home
             </Link>
-            <Link to="/create-novel" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
+            <Link to="" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
               ข้อมูล Projects
             </Link>
             <Link to="/create-novel" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
@@ -154,8 +182,27 @@ const GenerateNovelPage = () => {
         {/* Header */}
         <header className="flex justify-between items-center p-4 border-b border-gray-800">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold mr-4">{novelData.title}</h1>
-            <div className="flex items-center text-sm text-gray-400">
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => navigateToNovel('prev')}
+                disabled={currentNovelIndex === 0}
+                className={`p-2 rounded-full ${currentNovelIndex === 0 ? 'text-gray-600' : 'hover:bg-gray-700'}`}
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-xl font-semibold">{novels[currentNovelIndex].title}</h1>
+                <p className="text-sm text-gray-400">{novels[currentNovelIndex].summary}</p>
+              </div>
+              <button 
+                onClick={() => navigateToNovel('next')}
+                disabled={currentNovelIndex === novels.length - 1}
+                className={`p-2 rounded-full ${currentNovelIndex === novels.length - 1 ? 'text-gray-600' : 'hover:bg-gray-700'}`}
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="ml-8 flex items-center text-sm text-gray-400">
               <span>{messages.length} messages</span>
               <div className="mx-2">•</div>
               <div className="flex items-center">
