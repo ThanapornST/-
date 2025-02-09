@@ -89,10 +89,13 @@ const GenerateNovelPage = () => {
               Home
             </Link>
             <Link to="/create-novel" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
-              Projects
+              ข้อมูล Projects
+            </Link>
+            <Link to="/create-novel" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
+              สร้างเสียงตัวละคร
             </Link>
             <button className="w-full text-left px-4 py-2 rounded bg-[#2a2a2a]">
-              AI Story Generation
+              AI สร้างนิยาย
             </button>
           </div>
 
