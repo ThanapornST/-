@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FolderOpen } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+
+
 import { PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NovelData {
@@ -28,6 +33,10 @@ const GenerateNovelPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentNovelIndex, setCurrentNovelIndex] = useState(0);
+   const [activeContent, setActiveContent] = useState<'projects' | 'tables' | 'novel' | 'shortStory' | 'longNovel'>('projects');
+  const handleNavigation = (content: 'projects' | 'tables' | 'novel' | 'shortStory' | 'longNovel') => {
+    setActiveContent(content);
+  };
 
   // Sample novels array - in a real app, this would come from your backend
   const novels = [
@@ -100,6 +109,8 @@ const GenerateNovelPage = () => {
 
   if (!novelData) return null;
 
+  
+
   return (
     <div className="flex h-screen bg-[#1a1a1a] text-white">
       {/* Sidebar */}
@@ -116,15 +127,31 @@ const GenerateNovelPage = () => {
             <Link to="/" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
               Home
             </Link>
-            <Link to="" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
-              ข้อมูล Projects
-            </Link>
-            <Link to="/create-novel" className="block px-4 py-2 rounded hover:bg-[#2a2a2a]">
-              สร้างเสียงตัวละคร
-            </Link>
-            <button className="w-full text-left px-4 py-2 rounded bg-[#2a2a2a]">
+            <button 
+                onClick={() => handleNavigation('projects')}
+                className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'projects' ? 'bg-[#2a2a2a]' : ''}`}
+              >
+                <FolderOpen className="w-5 h-5 mr-3" />
+                ข้อมูล Projects
+              </button>
+              <button 
+                onClick={() => handleNavigation('tables')}
+                className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'tables' ? 'bg-[#2a2a2a]' : ''}`}
+              >
+                <FileText className="w-5 h-5 mr-3" />
+                สร้างเสียงตัวละคร
+              </button>
+              <button 
+                onClick={() => handleNavigation('novel')}
+                className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'novel' ? 'bg-[#2a2a2a]' : ''}`}
+              >
+                <BookOpen className="w-5 h-5 mr-3" />
               AI สร้างนิยาย
-            </button>
+              Novel
+              </button>
+            {/* <button className="w-full text-left px-4 py-2 rounded bg-[#2a2a2a]">
+              AI สร้างนิยาย
+            </button> */}
           </div>
 
           {/* Recently Added Section */}
@@ -176,6 +203,8 @@ const GenerateNovelPage = () => {
           </div>
         </div>
       </div>
+
+              
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
