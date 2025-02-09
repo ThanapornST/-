@@ -116,15 +116,6 @@ const RegisterPage = () => {
                 </button>
               </div>
 
-              <div className="text-sm text-gray-500">
-                <p>Password must contain:</p>
-                <ul className="list-disc list-inside mt-1">
-                  <li>At least 8 characters</li>
-                  <li>One uppercase letter</li>
-                  <li>One number</li>
-                  <li>One special character</li>
-                </ul>
-              </div>
 
               <button
                 type="submit"

@@ -7,6 +7,7 @@ import CreateNovelPage from './components/CreateNovelPage';
 import GenerateNovelPage from './components/GenerateNovelPage';
 import ProjectsPage from './components/ProjectsPage';
 import ProfilePage from './components/ProfilePage';
+import PricingPage from './components/PricingPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/generate-novel" element={<GenerateNovelPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/pricing" element={<PricingPage />} />
       </Routes>
     </BrowserRouter>
   );

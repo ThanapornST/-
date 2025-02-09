@@ -99,18 +99,8 @@ const GenerateNovelPage = () => {
     {
       id: 1,
       title: "Freelance girl and direct sales guy",
-      summary: "A freelance girl who cherished solitude crossed paths with a direct sales guy whose charm thrived on connection, and together, they redefined their worlds.",
+      // summary: "A freelance girl who cherished solitude crossed paths with a direct sales guy whose charm thrived on connection, and together, they redefined their worlds.",
     },
-    {
-      id: 2,
-      title: "Digital Dreams",
-      summary: "Where art meets gaming in the modern world",
-    },
-    {
-      id: 3,
-      title: "Creative Connections",
-      summary: "Two different souls connected by their passion for games",
-    }
   ];
 
   const generateSpeech = useCallback(async (text: string) => {
