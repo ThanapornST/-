@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Image } from 'lucide-react';
 
 interface CreateStoryModalProps {
@@ -21,6 +21,9 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, ty
   });
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>('');
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadError, setUploadError] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -31,22 +34,106 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, ty
     });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const validateFile = (file: File): boolean => {
+    setUploadError('');
+
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('Please upload a valid image file (JPG, PNG, or GIF)');
+      return false;
+    }
+
+    // Check file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setUploadError('File size must be less than 5MB');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFile = async (file: File) => {
+    if (validateFile(file)) {
+      try {
+        // Create a preview URL
+        const preview = URL.createObjectURL(file);
+        setCoverImage(file);
+        setCoverPreview(preview);
+        setUploadError('');
+      } catch (error) {
+        setUploadError('Error processing image. Please try again.');
+        console.error('Error processing image:', error);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', { ...formData, type, coverImage });
-    onClose();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Create form data for submission
+      const submitData = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        submitData.append(key, value);
+      });
+      
+      if (coverImage) {
+        submitData.append('coverImage', coverImage);
+      }
+
+      // Here you would typically send the form data to your backend
+      console.log('Form submitted:', {
+        formData,
+        coverImage: coverImage ? {
+          name: coverImage.name,
+          type: coverImage.type,
+          size: coverImage.size
+        } : null
+      });
+
+      onClose();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // Handle submission error
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setCoverImage(null);
+    setCoverPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -69,28 +156,75 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, ty
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column - Image Upload */}
             <div>
-              <label htmlFor="coverImage" className="block">
-                <div className="aspect-square rounded-lg border-2 border-dashed border-blue-500/50 bg-[#1a1a1a] flex flex-col items-center justify-center cursor-pointer overflow-hidden">
-                  {coverPreview ? (
-                    <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-center p-6">
-                      <Image className="w-16 h-16 mx-auto mb-4 text-blue-500" />
-                      <p className="text-lg mb-2 text-white">Image jpg/png</p>
-                      <button type="button" className="px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors">
-                        Choose File
+              <div
+                className={`relative aspect-square rounded-lg border-2 border-dashed 
+                  ${dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-blue-500/50 bg-[#1a1a1a]'}
+                  ${uploadError ? 'border-red-500' : ''}
+                  transition-colors duration-200`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="coverImage"
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                
+                {coverPreview ? (
+                  <div className="relative w-full h-full group">
+                    <img 
+                      src={coverPreview} 
+                      alt="Cover preview" 
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mb-2"
+                      >
+                        Change Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Remove
                       </button>
                     </div>
-                  )}
-                </div>
-              </label>
-              <input
-                type="file"
-                id="coverImage"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
+                  </div>
+                ) : (
+                  <label 
+                    htmlFor="coverImage" 
+                    className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <Image className="w-16 h-16 text-blue-500 mb-4" />
+                    <p className="text-lg mb-2 text-white">Drag and drop your image here</p>
+                    <p className="text-sm text-gray-400 mb-4">or</p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Choose File
+                    </button>
+                    <p className="text-xs text-gray-400 mt-4">
+                      Supported formats: JPG, PNG, GIF<br />
+                      Max file size: 5MB
+                    </p>
+                  </label>
+                )}
+              </div>
+              
+              {uploadError && (
+                <p className="mt-2 text-sm text-red-500">{uploadError}</p>
+              )}
             </div>
 
             {/* Right Column - Form Fields */}

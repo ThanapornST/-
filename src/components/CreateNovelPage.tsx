@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PenLine, BookOpen, FolderOpen, FileText, BookMarked, LogOut, Plus } from 'lucide-react';
 import NewProjectModal from './CreateNovelPage/NewProjectModal';
 
@@ -12,6 +12,7 @@ interface Project {
 
 const CreateNovelPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([
     {
       id: '1',
@@ -46,12 +47,19 @@ const CreateNovelPage = () => {
     setProjects([newProject, ...projects]);
   };
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <div className="flex h-screen bg-[#1a1a1a] text-white">
       {/* Sidebar */}
       <div className="w-64 bg-[#0f0f0f] p-4 flex flex-col">
         {/* Logo */}
-        <div className="flex items-center mb-8">
+        <div 
+          className="flex items-center mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleLogoClick}
+        >
           <PenLine className="h-6 w-6 text-white" />
           <span className="ml-2 text-xl font-semibold">Write Whisper</span>
         </div>
@@ -91,7 +99,10 @@ const CreateNovelPage = () => {
 
         {/* Log Out at Bottom */}
         <div className="mt-auto">
-          <button className="flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full"
+          >
             <LogOut className="w-5 h-5 mr-3" />
             Log Out
           </button>
