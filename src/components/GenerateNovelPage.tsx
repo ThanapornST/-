@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2, Plus, Pencil, Star, ArrowLeft } from 'lucide-react';
+import { FolderOpen, FileText, BookOpen, PenLine, ChevronDown, Import as Export, Save, Moon, User, Clock, ChevronLeft, ChevronRight, Volume2, Plus, Pencil, Star, ArrowLeft, Trash2 } from 'lucide-react';
 import { synthesizeSpeech } from '../services/textToSpeech';
 
 interface NovelData {
