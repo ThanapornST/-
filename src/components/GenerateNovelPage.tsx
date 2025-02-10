@@ -25,6 +25,54 @@ interface Message {
   avatar: string;
 }
 
+interface Project {
+  id: string;
+  title: string;
+  type: string;
+  lastModified: string;
+  progress: number;
+  chapters: number;
+  words: number;
+  status: 'draft' | 'published' | 'archived';
+  coverImage: string;
+}
+
+const projects: Project[] = [
+  {
+    id: '1',
+    title: 'The Lost Kingdom',
+    type: 'Fantasy Novel',
+    lastModified: '2024-03-20',
+    progress: 65,
+    chapters: 12,
+    words: 45000,
+    status: 'draft',
+    coverImage: 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&q=80'
+  },
+  {
+    id: '2',
+    title: 'City of Dreams',
+    type: 'Science Fiction',
+    lastModified: '2024-03-18',
+    progress: 90,
+    chapters: 18,
+    words: 62000,
+    status: 'published',
+    coverImage: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&q=80'
+  },
+  {
+    id: '3',
+    title: 'Whispers in the Dark',
+    type: 'Horror',
+    lastModified: '2024-03-15',
+    progress: 30,
+    chapters: 5,
+    words: 15000,
+    status: 'draft',
+    coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80'
+  }
+];
+
 const GenerateNovelPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,7 +80,7 @@ const GenerateNovelPage = () => {
   const [language, setLanguage] = useState('Thai');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentNovelIndex, setCurrentNovelIndex] = useState(0);
-  const [activeContent, setActiveContent] = useState<'projects' | 'tables' | 'novel'>('novel');
+  const [activeContent, setActiveContent] = useState<'chat' | 'projects' | 'character-voices'>('chat');
   const [rightContent, setRightContent] = useState<'chat' | 'outline' | 'settings'>('chat');
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
@@ -99,7 +147,6 @@ const GenerateNovelPage = () => {
     {
       id: 1,
       title: "Freelance girl and direct sales guy",
-      // summary: "A freelance girl who cherished solitude crossed paths with a direct sales guy whose charm thrived on connection, and together, they redefined their worlds.",
     },
   ];
 
@@ -128,10 +175,8 @@ const GenerateNovelPage = () => {
   }, [audioPlayer]);
 
   useEffect(() => {
-    // Check if we have data from navigation state
     if (location.state?.novelData) {
       setNovelData(location.state.novelData);
-      // Initialize the chat with the novel data
       if (location.state.mode === 'create') {
         const initialMessage: Message = {
           id: messages.length + 1,
@@ -143,7 +188,6 @@ const GenerateNovelPage = () => {
         setMessages(prev => [...prev, initialMessage]);
       }
     } else {
-      // Check localStorage as fallback
       const savedNovelData = localStorage.getItem('novelData');
       if (savedNovelData) {
         setNovelData(JSON.parse(savedNovelData));
@@ -161,11 +205,9 @@ const GenerateNovelPage = () => {
     const lastMessage = messages[messages.length - 1];
     const isSunNext = lastMessage.sender === 'Schebel';
     
-    // Use novel data to influence the conversation
     let newText = '';
     
     if (novelData) {
-      // Generate response based on novel data and context
       if (isSunNext) {
         const responses = [
           `ฉันชอบแนวคิดเรื่อง ${novelData.title} มาก โดยเฉพาะในส่วนของ ${novelData.plotSummary}`,
@@ -182,7 +224,6 @@ const GenerateNovelPage = () => {
         newText = responses[Math.floor(Math.random() * responses.length)];
       }
     } else {
-      // Fallback responses if no novel data
       newText = isSunNext ? 
         "เล่าเพิ่มเติมเกี่ยวกับแนวคิดของเรื่องได้ไหม?" : 
         "ฉันกำลังพัฒนาเนื้อเรื่องให้น่าสนใจมากขึ้นค่ะ";
@@ -201,84 +242,140 @@ const GenerateNovelPage = () => {
     setMessages(prev => [...prev, newMessage]);
     setIsGenerating(false);
 
-    // If we're on the last page and add a new message, move to the new last page
     const totalPages = Math.ceil((messages.length + 1) / messagesPerPage);
     if (currentPage < totalPages) {
       setCurrentPage(totalPages);
     }
   };
 
-  const navigateToNovel = (direction: 'prev' | 'next') => {
-    if (direction === 'prev' && currentNovelIndex > 0) {
-      setCurrentNovelIndex(currentNovelIndex - 1);
-    } else if (direction === 'next' && currentNovelIndex < novels.length - 1) {
-      setCurrentNovelIndex(currentNovelIndex + 1);
-    }
-  };
+  const renderMainContent = () => {
+    switch (activeContent) {
+      case 'projects':
+        return (
+          <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-semibold">My Projects</h1>
+              <Link 
+                to="/create-novel"
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Create New Project
+              </Link>
+            </div>
 
-  const convertMessagesToCSV = (messageIds: number[]) => {
-    const messagesToExport = messages.filter(message => messageIds.includes(message.id));
-    const header = "Id,Sender,Text,IsAI\n";
-    const csvRows = messagesToExport.map(message => {
-      return `${message.id},${message.sender},"${message.text.replace(/"/g, '""')}",${message.isAI}`;
-    }).join('\n');
-    return header + csvRows;
-  };
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((project) => (
+                <div key={project.id} className="bg-[#0f0f0f] rounded-lg overflow-hidden group">
+                  <div className="relative aspect-video">
+                    <img 
+                      src={project.coverImage} 
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+                        <button 
+                          className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                        >
+                          Open Project
+                        </button>
+                        <button className="p-1.5 bg-red-500/10 text-red-500 rounded hover:bg-red-500/20 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-medium mb-1">{project.title}</h3>
+                        <span className="text-sm text-gray-400">{project.type}</span>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        project.status === 'published' ? 'bg-green-500/10 text-green-500' :
+                        project.status === 'draft' ? 'bg-yellow-500/10 text-yellow-500' :
+                        'bg-gray-500/10 text-gray-500'
+                      }`}>
+                        {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm text-gray-400 mb-1">
+                          <span>Progress</span>
+                          <span>{project.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${project.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between text-sm">
+                        <div className="flex items-center text-gray-400">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>{project.lastModified}</span>
+                        </div>
+                        <div className="text-gray-400">
+                          {project.words.toLocaleString()} words
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
 
-  const downloadCSV = (csvData: string, filename: string) => {
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+      case 'character-voices':
+        return (
+          <div className="flex-1 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Character Voices</h2>
+              <button className="px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] transition-colors">
+                Add Voice
+              </button>
+            </div>
 
-  const handleExportAll = () => {
-    const messageIds = messages.map(message => message.id);
-    const csvData = convertMessagesToCSV(messageIds);
-    downloadCSV(csvData, 'all_messages.csv');
-    setIsExportModalOpen(false);
-  };
+            <div className="grid grid-cols-3 gap-4">
+              {characters.map((character) => (
+                <div key={character.id} className="relative group">
+                  <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center">
+                    <div className="relative">
+                      <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
+                        <span className="text-3xl text-gray-400">{character.name}</span>
+                      </div>
+                      {character.isStarred && (
+                        <Star className="absolute top-0 right-0 w-5 h-5 text-yellow-500" fill="currentColor" />
+                      )}
+                    </div>
+                    <span className="text-gray-400">Status: {character.status}</span>
+                    <button className="mt-2">
+                      <Pencil className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
 
-  const handleExportSelected = () => {
-    if (selectedMessages.length === 0) {
-      alert('Please select at least one message to export.');
-      return;
-    }
-    const csvData = convertMessagesToCSV(selectedMessages);
-    downloadCSV(csvData, 'selected_messages.csv');
-    setIsExportModalOpen(false);
-  };
+              <div className="relative group">
+                <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center justify-center h-full cursor-pointer hover:bg-[#2a2a2a] transition-colors">
+                  <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
+                    <Plus className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <span className="text-gray-400">Add Character</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
 
-  const handleSelectMessage = (messageId: number) => {
-    setSelectedMessages(prev => {
-      if (prev.includes(messageId)) {
-        return prev.filter(id => id !== messageId);
-      } else {
-        return [...prev, messageId];
-      }
-    });
-  };
-
-  // Calculate total pages
-  const totalPages = Math.ceil(messages.length / messagesPerPage);
-
-  // Generate page numbers
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
-
-  const renderRightContent = () => {
-    switch (rightContent) {
-      case 'chat':
+      default:
         return (
           <>
-            {/* Chat Area */}
             <div className="flex-1 overflow-auto p-4">
               {currentMessages.map((message) => (
                 <div key={message.id} className="flex items-start mb-6">
@@ -315,7 +412,6 @@ const GenerateNovelPage = () => {
               ))}
             </div>
 
-            {/* Pagination */}
             <div className="flex justify-center items-center space-x-2 p-4 border-t border-gray-800">
               <button
                 onClick={() => paginate(currentPage - 1)}
@@ -328,24 +424,24 @@ const GenerateNovelPage = () => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {pageNumbers.map(number => (
+              {Array.from({ length: Math.ceil(messages.length / messagesPerPage) }).map((_, index) => (
                 <button
-                  key={number}
-                  onClick={() => paginate(number)}
+                  key={index + 1}
+                  onClick={() => paginate(index + 1)}
                   className={`px-3 py-1 rounded ${
-                    currentPage === number 
+                    currentPage === index + 1 
                       ? 'bg-blue-500' 
                       : 'bg-gray-700 hover:bg-gray-600'
                   }`}
                 >
-                  {number}
+                  {index + 1}
                 </button>
               ))}
               <button
                 onClick={() => paginate(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === Math.ceil(messages.length / messagesPerPage)}
                 className={`px-3 py-1 rounded ${
-                  currentPage === totalPages 
+                  currentPage === Math.ceil(messages.length / messagesPerPage)
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
                     : 'bg-blue-500 hover:bg-blue-600'
                 }`}
@@ -354,7 +450,6 @@ const GenerateNovelPage = () => {
               </button>
             </div>
 
-            {/* Input Area */}
             <div className="p-4 border-t border-gray-800">
               <div className="flex items-center gap-4">
                 <button className="p-2 hover:bg-gray-700 rounded">
@@ -373,98 +468,17 @@ const GenerateNovelPage = () => {
             </div>
           </>
         );
-      case 'tables':
-        return (
-          <div className="flex-1 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">ตัวละครทั้งหมด</h2>
-              <button className="px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] transition-colors">
-                เพิ่มเสียงตัวละคร
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              {characters.map((character) => (
-                <div key={character.id} className="relative group">
-                  <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center">
-                    <div className="relative">
-                      <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
-                        <span className="text-3xl text-gray-400">{character.name}</span>
-                      </div>
-                      {character.isStarred && (
-                        <Star className="absolute top-0 right-0 w-5 h-5 text-yellow-500" fill="currentColor" />
-                      )}
-                    </div>
-                    <span className="text-gray-400">สถานะ</span>
-                    <button className="mt-2">
-                      <Pencil className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* Add New Character Card */}
-              <div className="relative group">
-                <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col items-center justify-center h-full cursor-pointer hover:bg-[#2a2a2a] transition-colors">
-                  <div className="w-24 h-24 bg-[#2a2a2a] rounded-full flex items-center justify-center mb-4">
-                    <Plus className="w-8 h-8 text-blue-500" />
-                  </div>
-                  <span className="text-gray-400">เพิ่มตัวละคร</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'outline':
-        return (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Character Profiles</h2>
-            <div className="space-y-6">
-              <div className="bg-[#2a2a2a] p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Sun</h3>
-                <p className="text-gray-300">A playful man who works at a game company. He's known for his good mood and excellent communication skills. Always trying to bring people together and make work fun.</p>
-              </div>
-              <div className="bg-[#2a2a2a] p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Schebel</h3>
-                <p className="text-gray-300">A talented freelance artist who prefers solitude. She's calm and reserved, expressing herself better through her art than words. Values independence in her work.</p>
-              </div>
-            </div>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Story Settings</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Writing Style
-                </label>
-                <select className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg px-4 py-2">
-                  <option>Casual Chat</option>
-                  <option>Formal</option>
-                  <option>Mixed</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Language
-                </label>
-                <select 
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg px-4 py-2"
-                >
-                  <option value="Thai">Thai</option>
-                  <option value="English">English</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
     }
+  };
+
+  const handleSelectMessage = (messageId: number) => {
+    setSelectedMessages(prev => {
+      if (prev.includes(messageId)) {
+        return prev.filter(id => id !== messageId);
+      } else {
+        return [...prev, messageId];
+      }
+    });
   };
 
   if (!novelData) return null;
@@ -483,21 +497,27 @@ const GenerateNovelPage = () => {
         <nav className="flex-1 space-y-2">
           <button 
             onClick={() => setActiveContent('projects')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'projects' ? 'bg-[#2a2a2a]' : ''}`}
+            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
+              activeContent === 'projects' ? 'bg-[#2a2a2a] text-white' : ''
+            }`}
           >
             <FolderOpen className="w-5 h-5 mr-3" />
             Projects
           </button>
           <button 
-            onClick={() => setActiveContent('tables')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'tables' ? 'bg-[#2a2a2a]' : ''}`}
+            onClick={() => setActiveContent('character-voices')}
+            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
+              activeContent === 'character-voices' ? 'bg-[#2a2a2a] text-white' : ''
+            }`}
           >
             <FileText className="w-5 h-5 mr-3" />
             Character Voices
           </button>
           <button 
-            onClick={() => setActiveContent('novel')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${activeContent === 'novel' ? 'bg-[#2a2a2a]' : ''}`}
+            onClick={() => setActiveContent('chat')}
+            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
+              activeContent === 'chat' ? 'bg-[#2a2a2a] text-white' : ''
+            }`}
           >
             <BookOpen className="w-5 h-5 mr-3" />
             AI Novel Generator
@@ -542,26 +562,7 @@ const GenerateNovelPage = () => {
         {/* Header */}
         <header className="flex justify-between items-center p-4 border-b border-gray-800">
           <div className="flex items-center">
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => navigateToNovel('prev')}
-                disabled={currentNovelIndex === 0}
-                className={`p-2 rounded-full ${currentNovelIndex === 0 ? 'text-gray-600' : 'hover:bg-gray-700'}`}
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold">{novels[currentNovelIndex].title}</h1>
-                <p className="text-sm text-gray-400">{novels[currentNovelIndex].summary}</p>
-              </div>
-              <button 
-                onClick={() => navigateToNovel('next')}
-                disabled={currentNovelIndex === novels.length - 1}
-                className={`p-2 rounded-full ${currentNovelIndex === novels.length - 1 ? 'text-gray-600' : 'hover:bg-gray-700'}`}
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
+            <h1 className="text-xl font-semibold">{novels[currentNovelIndex].title}</h1>
             <div className="ml-8 flex items-center text-sm text-gray-400">
               <span>{messages.length} messages</span>
               <div className="mx-2">•</div>
@@ -572,26 +573,6 @@ const GenerateNovelPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex rounded-lg overflow-hidden">
-              <button
-                onClick={() => setRightContent('chat')}
-                className={`px-4 py-2 ${rightContent === 'chat' ? 'bg-blue-500' : 'bg-gray-700'}`}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => setRightContent('outline')}
-                className={`px-4 py-2 ${rightContent === 'outline' ? 'bg-blue-500' : 'bg-gray-700'}`}
-              >
-                Characters
-              </button>
-              <button
-                onClick={() => setRightContent('settings')}
-                className={`px-4 py-2 ${rightContent === 'settings' ? 'bg-blue-500' : 'bg-gray-700'}`}
-              >
-                Settings
-              </button>
-            </div>
             <button
               onClick={() => setIsExportModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600"
@@ -606,39 +587,9 @@ const GenerateNovelPage = () => {
           </div>
         </header>
 
-        {/* Right Content Area */}
-        {renderRightContent()}
+        {/* Main Content Area */}
+        {renderMainContent()}
       </div>
-
-      {/* Export Modal */}
-      {isExportModalOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-[#0f0f0f] w-full max-w-md p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Export Options</h2>
-            <p className="text-gray-400 mb-4">Choose how you want to export your messages:</p>
-            <div className="space-y-4">
-              <button
-                onClick={handleExportAll}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Export All Messages
-              </button>
-              <button
-                onClick={handleExportSelected}
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                Export Selected Messages
-              </button>
-            </div>
-            <button
-              onClick={() => setIsExportModalOpen(false)}
-              className="mt-6 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
