@@ -91,13 +91,13 @@ const GenerateNovelPage = () => {
 
   const [characters, setCharacters] = useState([
     {
-      id: 1,
+      id: 'char-1',
       name: 'ชื่อ',
       status: 'active',
       isStarred: true
     },
     {
-      id: 2,
+      id: 'char-2',
       name: 'ชื่อ',
       status: 'active',
       isStarred: true
@@ -135,12 +135,10 @@ const GenerateNovelPage = () => {
     }
   ]);
 
-  // Get current messages
   const indexOfLastMessage = currentPage * messagesPerPage;
   const indexOfFirstMessage = indexOfLastMessage - messagesPerPage;
   const currentMessages = messages.slice(indexOfFirstMessage, indexOfLastMessage);
 
-  // Change page
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const novels = [
@@ -426,7 +424,7 @@ const GenerateNovelPage = () => {
               </button>
               {Array.from({ length: Math.ceil(messages.length / messagesPerPage) }).map((_, index) => (
                 <button
-                  key={index + 1}
+                  key={`page-${index + 1}`}
                   onClick={() => paginate(index + 1)}
                   className={`px-3 py-1 rounded ${
                     currentPage === index + 1 
@@ -485,65 +483,52 @@ const GenerateNovelPage = () => {
 
   return (
     <div className="flex h-screen bg-[#1a1a1a] text-white">
-      {/* Sidebar */}
       <div className="w-64 bg-[#0f0f0f] p-4 flex flex-col">
-        {/* Logo */}
         <Link to="/" className="flex items-center mb-8 hover:opacity-80">
           <PenLine className="h-6 w-6" />
           <span className="ml-2 text-xl font-semibold">WriteWhisper</span>
         </Link>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-2">
-          <button 
-            onClick={() => setActiveContent('projects')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
-              activeContent === 'projects' ? 'bg-[#2a2a2a] text-white' : ''
-            }`}
-          >
-            <FolderOpen className="w-5 h-5 mr-3" />
-            Projects
-          </button>
-          <button 
-            onClick={() => setActiveContent('character-voices')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
-              activeContent === 'character-voices' ? 'bg-[#2a2a2a] text-white' : ''
-            }`}
-          >
-            <FileText className="w-5 h-5 mr-3" />
-            Character Voices
-          </button>
-          <button 
-            onClick={() => setActiveContent('chat')}
-            className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
-              activeContent === 'chat' ? 'bg-[#2a2a2a] text-white' : ''
-            }`}
-          >
-            <BookOpen className="w-5 h-5 mr-3" />
-            AI Novel Generator
-          </button>
+          {[
+            { id: 'projects', icon: FolderOpen, label: 'Projects' },
+            { id: 'character-voices', icon: FileText, label: 'Character Voices' },
+            { id: 'chat', icon: BookOpen, label: 'AI Novel Generator' }
+          ].map(({ id, icon: Icon, label }) => (
+            <button 
+              key={`nav-${id}`}
+              onClick={() => setActiveContent(id as 'projects' | 'character-voices' | 'chat')}
+              className={`flex items-center px-3 py-2 text-gray-300 hover:bg-[#2a2a2a] rounded-lg w-full ${
+                activeContent === id ? 'bg-[#2a2a2a] text-white' : ''
+              }`}
+            >
+              <Icon className="w-5 h-5 mr-3" />
+              {label}
+            </button>
+          ))}
         </nav>
 
-        {/* Story Chapters */}
         <div className="mt-8">
           <div className="flex items-center px-4 py-2 text-sm text-gray-400">
             <Clock className="w-4 h-4 mr-2" />
             Chapters
           </div>
           <div className="space-y-1">
-            <button className="w-full text-left px-4 py-2 rounded hover:bg-[#2a2a2a] text-sm">
-              Chapter 1: First Meeting
-            </button>
-            <button className="w-full text-left px-4 py-2 rounded hover:bg-[#2a2a2a] text-sm">
-              Chapter 2: The Proposal
-            </button>
-            <button className="w-full text-left px-4 py-2 rounded hover:bg-[#2a2a2a] text-sm">
-              Chapter 3: Working Together
-            </button>
+            {[
+              { id: 'ch1', title: 'Chapter 1: First Meeting' },
+              { id: 'ch2', title: 'Chapter 2: The Proposal' },
+              { id: 'ch3', title: 'Chapter 3: Working Together' }
+            ].map(chapter => (
+              <button 
+                key={chapter.id}
+                className="w-full text-left px-4 py-2 rounded hover:bg-[#2a2a2a] text-sm"
+              >
+                {chapter.title}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* User Profile */}
         <div className="pt-4 border-t border-gray-800">
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
@@ -557,9 +542,7 @@ const GenerateNovelPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
         <header className="flex justify-between items-center p-4 border-b border-gray-800">
           <div className="flex items-center">
             <h1 className="text-xl font-semibold">{novels[currentNovelIndex].title}</h1>
@@ -587,7 +570,6 @@ const GenerateNovelPage = () => {
           </div>
         </header>
 
-        {/* Main Content Area */}
         {renderMainContent()}
       </div>
     </div>
