@@ -1,15 +1,35 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { PenLine, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { PenLine, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { loginWithEmail } from '../firebase.ts';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt with:', { email, password });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const { user, error: loginError } = await loginWithEmail(email, password);
+      
+      if (loginError) {
+        setError(loginError);
+      } else if (user) {
+        // Successful login
+        navigate('/create-novel');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -18,7 +38,7 @@ const LoginPage = () => {
         {/* Left side - Image */}
         <div className="w-1/2 relative">
           <img
-            src="https://i.pinimg.com/736x/61/0f/58/610f58cadeedca4ac092e3f9dcc7e5f7.jpg"
+            src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&q=80"
             alt="Decorative"
             className="w-full h-full object-cover"
           />
@@ -43,6 +63,14 @@ const LoginPage = () => {
               <h2 className="text-2xl font-medium text-gray-800">Welcome back!</h2>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg flex items-center text-red-600">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
+
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <input
@@ -52,6 +80,7 @@ const LoginPage = () => {
                 className="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500"
                 placeholder="Email address"
                 required
+                disabled={isLoading}
               />
 
               <div className="relative">
@@ -62,11 +91,13 @@ const LoginPage = () => {
                   className="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500"
                   placeholder="Password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -80,9 +111,12 @@ const LoginPage = () => {
 
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white py-3 rounded-full hover:bg-blue-600 transition-colors"
+                className={`w-full bg-blue-500 text-white py-3 rounded-full hover:bg-blue-600 transition-colors ${
+                  isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={isLoading}
               >
-                Login
+                {isLoading ? 'Logging in...' : 'Login'}
               </button>
             </form>
 
